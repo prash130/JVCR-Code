@@ -88,7 +88,7 @@ def download_dataset(args):
     file_id = '1kQihg2Yfc2clM5Qavxh2RiGc2EIg-4bX' # afwlp-2000 - 2GB
     destination = args.dataset_path + args.dataset_file_name + ".tar"
     utils.dataset_utils.download_file_from_google_drive(file_id, destination)
-    utils.dataset_utils.extract_tar_file(destination)
+    utils.dataset_utils.extract_tar_file(destination, args.dataset_path)
 
 
 def train(args):

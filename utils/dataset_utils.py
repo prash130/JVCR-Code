@@ -33,8 +33,8 @@ def save_response_content(response, destination):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
 
-def extract_tar_file(path):
+def extract_tar_file(path, outputdir):
     print('extracting dataset file..')
     tf = tarfile.open(path)
-    tf.extractall()
+    tf.extractall(path=outputdir)
     print('extraction of dataset complete.')
