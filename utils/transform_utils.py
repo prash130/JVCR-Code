@@ -1,12 +1,7 @@
-import os
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-import scipy.misc
-from PIL import Image
-import numpy as np
-import torchvision
-import torch
+#Utils SET 2
+from __future__ import absolute_import
 
+import os
 import sys
 import argparse
 from time import time
@@ -23,15 +18,6 @@ import torch.optim
 import torchvision
 import scipy.misc
 import matplotlib.pyplot as plt
-
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import scipy.misc
-
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 def get_transform(center, scale, res, rot=0):
@@ -174,7 +160,6 @@ def readPtsTorch(ptspath):
             pts.append(point)
     return torch.Tensor(pts)
 
-
 def transf_pred(pred_coord, center, scale):
     lm_pred = transform_preds(pred_coord, center, scale, [256, 256], 256)
 
@@ -281,15 +266,6 @@ def to_numpy(tensor):
                          .format(type(tensor)))
     return tensor
 
-
-def to_torch(ndarray):
-    if type(ndarray).__module__ == 'numpy':
-        return torch.from_numpy(ndarray)
-    elif not torch.is_tensor(ndarray):
-        raise ValueError("Cannot convert {} to torch tensor"
-                         .format(type(ndarray)))
-    return ndarray
-
 def draw_labelvolume(vol, pt, sigma, type='Gaussian'):
     # Draw a 2D gaussian 
     # ~~
@@ -378,232 +354,6 @@ def show_voxel(pred_heatmap3d, ax=None):
     ax.set_ylabel('', fontsize=10)
     ax.set_zlabel('', fontsize=10)
 
-# Bottleneck represents the Residual Module with layers (128X1X1) -> (128X3X3) -> (256X1X1) Fig.4 left
-class Bottleneck(nn.Module):
-    expansion = 2
-
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
-        super(Bottleneck, self).__init__()
-
-        self.bn1 = nn.BatchNorm2d(inplanes)
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=True)
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=True)
-        self.bn3 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes * 2, kernel_size=1, bias=True)
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
-        self.stride = stride
-
-    def forward(self, x):
-        residual = x
-
-        out = self.bn1(x)
-        out = self.relu(out)
-        out = self.conv1(out)
-
-        out = self.bn2(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-
-        out = self.bn3(out)
-        out = self.relu(out)
-        out = self.conv3(out)
-
-        if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out += residual
-
-        return out
-
-
-# A single hourglass
-class Hourglass(nn.Module):
-    def __init__(self, block, num_blocks, planes, depth):
-        super(Hourglass, self).__init__()
-        self.depth = depth
-        self.block = block
-        self.upsample = nn.Upsample(scale_factor=2)
-        self.hg = self._make_hour_glass(block, num_blocks, planes, depth)
-
-    def _make_residual(self, block, num_blocks, planes):
-        layers = []
-        for i in range(0, num_blocks):
-            layers.append(block(planes*block.expansion, planes))
-        return nn.Sequential(*layers)
-
-    def _make_hour_glass(self, block, num_blocks, planes, depth):
-        hg = []
-        for i in range(depth):
-            res = []
-            for j in range(3):
-                res.append(self._make_residual(block, num_blocks, planes))
-            if i == 0:
-                res.append(self._make_residual(block, num_blocks, planes))
-            hg.append(nn.ModuleList(res))
-        return nn.ModuleList(hg)
-
-    def _hour_glass_forward(self, n, x):
-        up1 = self.hg[n-1][0](x)
-        low1 = F.max_pool2d(x, 2, stride=2)
-        low1 = self.hg[n-1][1](low1)
-
-        if n > 1:
-            low2 = self._hour_glass_forward(n-1, low1)
-        else:
-            low2 = self.hg[n-1][3](low1)
-        low3 = self.hg[n-1][2](low2)
-        up2 = self.upsample(low3)
-        out = up1 + up2
-        return out
-
-    def forward(self, x):
-        return self._hour_glass_forward(self.depth, x)
-
-# An hourglass network with multiple hourglasses with intermediate supervision
-class HourglassNet(nn.Module):
-    '''Hourglass model from Newell et al ECCV 2016'''
-    def __init__(self, block, num_stacks=2, num_blocks=4, num_classes=[16]):
-        super(HourglassNet, self).__init__()
-
-        self.inplanes = 64
-        self.num_feats = 128
-        self.num_stacks = num_stacks
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
-                               bias=True)
-        self.bn1 = nn.BatchNorm2d(self.inplanes) 
-        self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self._make_residual(block, self.inplanes, 1)
-        self.layer2 = self._make_residual(block, self.inplanes, 1)
-        self.layer3 = self._make_residual(block, self.num_feats, 1)
-        self.maxpool = nn.MaxPool2d(2, stride=2)
-
-        if len(num_classes) == 1:
-            num_classes = num_classes*num_stacks
-
-        assert len(num_classes) == num_stacks
-
-        # build hourglass modules
-        ch = self.num_feats*block.expansion
-        hg, res, fc, score, fc_, score_ = [], [], [], [], [], []
-        for i in range(num_stacks):
-            hg.append(Hourglass(block, num_blocks, self.num_feats, 4))
-            res.append(self._make_residual(block, self.num_feats, num_blocks))
-            fc.append(self._make_fc(ch, ch))
-            score.append(nn.Conv2d(ch, num_classes[i], kernel_size=1, bias=True))
-            if i < num_stacks-1:
-                fc_.append(nn.Conv2d(ch, ch, kernel_size=1, bias=True))
-                score_.append(nn.Conv2d(num_classes[i], ch, kernel_size=1, bias=True))
-        self.hg = nn.ModuleList(hg)
-        self.res = nn.ModuleList(res)
-        self.fc = nn.ModuleList(fc)
-        self.score = nn.ModuleList(score)
-        self.fc_ = nn.ModuleList(fc_) 
-        self.score_ = nn.ModuleList(score_)
-
-    def _make_residual(self, block, planes, blocks, stride=1):
-        downsample = None
-        if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=True),
-            )
-
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
-        self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
-        return nn.Sequential(*layers)
-
-    def _make_fc(self, inplanes, outplanes):
-        bn = nn.BatchNorm2d(inplanes)
-        conv = nn.Conv2d(inplanes, outplanes, kernel_size=1, bias=True)
-        return nn.Sequential(
-                conv,
-                bn,
-                self.relu,
-            )
-
-    # forward pass
-    def forward(self, x):
-       
-        out = []
-        
-        # Transform image from 256X256 to 64X64
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x) 
-
-        x = self.layer1(x)  
-        x = self.maxpool(x)
-        x = self.layer2(x)  
-        x = self.layer3(x)  
-
-        # number of stack = 4, 
-        for i in range(self.num_stacks):
-            y = self.hg[i](x)
-            y = self.res[i](y)
-            y = self.fc[i](y)
-            score = self.score[i](y)
-            out.append(score)
-            if i < self.num_stacks-1:
-                fc_ = self.fc_[i](y)
-                score_ = self.score_[i](score)
-                x = x + fc_ + score_  # x = previous hourglass layer output +
-                                      # fc layer + output of the current hourglass layer (shown in the diagram above Fig.4 Right)
-
-        return out
-
-
-
-class coordRegressor(nn.Module):
-    def __init__(self, nParts):#, input_size, feat_size, output_size):
-        super(coordRegressor, self).__init__()
-        self.nParts = nParts
-        self.depth = 5
-        in_ch = [1,64,128,256,512]
-        out_ch = [64,128,256,512,256]
-        ec_k = [4,4,4,4,4]
-        ec_s = [2,2,2,2,1]
-        ec_p = [1,1,1,1,0]
-        encoder_ = []
-
-        # Adding the Conv layers to reduce the # of channels with every layer [64 -> 128 -> 256 -> 512 -> 256]
-        for i in range(self.depth):
-            if i < self.depth-1:
-                layer_i = nn.Sequential(
-                    nn.Conv3d(in_ch[i], out_ch[i], kernel_size=ec_k[i], stride=ec_s[i], padding=ec_p[i]),
-                    nn.BatchNorm3d(out_ch[i]),
-                    # nn.ReLU(inplace=True)
-                    nn.LeakyReLU(0.2, inplace=True)
-                    )
-            else:
-                layer_i = nn.Sequential(
-                    nn.Conv3d(in_ch[i], out_ch[i], kernel_size=ec_k[i], stride=ec_s[i], padding=ec_p[i]),
-                    # nn.ReLU(inplace=True)
-                    # nn.Sigmoid()
-                    )
-            encoder_.append(layer_i)
-        self.encoder = nn.ModuleList(encoder_)
-
-        self.fc_cord = nn.Linear(out_ch[-1], self.nParts*3)
-        
-  # Start with a 64X64X64 volume (convolves to) -> 1X1X256 -> Fully Connected layer of (68 * 3 points) where 68 is number of landmark points and 3 is x,y,z dimensions.
-    def forward(self, x):
-        feat = x
-        for i in range(self.depth):
-            feat = self.encoder[i](feat)
-            
-        embedding = feat.view(x.size(0), -1)
-        cord = self.fc_cord(embedding)
-     
-        
-        return feat, embedding, cord
-
 def to_torch(ndarray):
     if type(ndarray).__module__ == 'numpy':
         return torch.from_numpy(ndarray)
@@ -611,18 +361,6 @@ def to_torch(ndarray):
         raise ValueError("Cannot convert {} to torch tensor"
                          .format(type(ndarray)))
     return ndarray
-
-
-def readPtsTorch(ptspath):
-    pts = []
-    with open(ptspath, 'r') as file:
-        lines = file.readlines()
-        num_points = int(lines[1].split(' ')[1])
-        for i in range(3,3+num_points):
-            point = [float(num) for num in lines[i].split(' ')]
-            pts.append(point)
-
-    return torch.tensor(pts)
 
 
 def readPts(ptspath):
@@ -635,28 +373,7 @@ def readPts(ptspath):
             pts.append(point)
 
     return np.array(pts)
-  
-class JVCRDataSet(Dataset):
-    """Custom Dataset for loading entries from HDF5 databases"""
 
-    def __init__(self, path):
-    
-        self.path = path
-        items = os.listdir(path)
-        items.sort()
-
-        datasetMap = {a:b for a,b in enumerate([i[:-4] for i in items if i.endswith('.jpg')])} # maps index with imageid
-            
-        self.datasetMap = datasetMap
-      
-
-    def __getitem__(self, index):
-      return self.datasetMap[index]
-     
-
-    def __len__(self):
-        return len(self.datasetMap) # return self.num_entries
-  
 def inputListTransform(imgList, ptsList):
     input_tensor_list = []
     for idx in range(0, len(imgList)):
@@ -676,7 +393,6 @@ def inputListTransform(imgList, ptsList):
         
     return torch.stack(input_tensor_list)
   
-  
 def reshapeTensorList(tensorList):
   outerList = []
   for idx1 in range(0,len(tensorList)):
@@ -692,67 +408,3 @@ def save_model(model, optimizer, file_name):
         'model_state_dict': model.state_dict(),
         'optimizer' : optimizer
     }, file_name)
-
-
-num_stacks=1
-num_blocks=4
-num_classes=[1, 2, 4, 64]
-
-  
-train_type = "hourglass"
-dataset_path = "imgs/"
-train_dataset = JVCRDataSet(dataset_path)
-batch_size = 4
-train_loader = DataLoader(dataset=train_dataset,
-                          batch_size=batch_size,
-                          shuffle=True,
-                          num_workers=4)
-
-modelRegression = coordRegressor(68)
-modelHourGlass = HourglassNet(Bottleneck, num_blocks, num_stacks, num_classes)
-learning_rate = 1e-4
-loss_fn = torch.nn.MSELoss()#(reduction='sum')
-optimizer = torch.optim.RMSprop(modelHourGlass.parameters(), lr = learning_rate)
-
-num_epochs = 25
-save_freq = 5
-counter = 0
-for epoch in range(num_epochs):
-
-    for batch_idx, (x) in enumerate(train_loader):
-        counter = counter + 1
-        images=[]
-        tensors=[]
-        pts=[]
-
-        for item in x:
-          images.append(Image.open(dataset_path+item+".jpg").convert('RGB'))
-          tensors.append(torch.load(dataset_path+item+".tensor"))
-          pts.append(to_torch(readPtsTorch(dataset_path+item+".pts")))        
-      
-        images = inputListTransform(images, pts)
-        tensors = reshapeTensorList(tensors)
-        output = modelHourGlass(images)
-        
-        #compute losses
-        loss_layer1 = loss_fn(output[0], tensors[0])  
-        loss_layer2 = loss_fn(output[1], tensors[1])           
-        loss_layer3 = loss_fn(output[2], tensors[2])   
-        loss_layer4 = loss_fn(output[3], tensors[3])    
-
-     
-        total_loss = loss_layer1 + loss_layer2 + loss_layer3 + loss_layer4 # Adding the losses from the four layers in the Hourglass Network
-
-        print("epoch",epoch, "batch_number", batch_idx, "loss", total_loss.item())
-      
-        modelHourGlass.zero_grad()
-
-        total_loss.backward()
-        optimizer.step()
-              
-    if epoch % save_freq == 0:
-        file_name = 'epoch-'+str(epoch)+'-loss-+'+str(total_loss)+'+reg-model-opt.model'
-        save_model(modelHourGlass, optimizer, file_name)
-        print('model '+file_name+' saved..')
-
-
