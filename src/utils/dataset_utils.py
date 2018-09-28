@@ -4,7 +4,7 @@ import tarfile
 #file_id = 'TAKE ID FROM SHAREABLE LINK'
 #destination = 'DESTINATION FILE ON YOUR DISK'
 def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download"
+    URL = 'https://docs.google.com/uc?export=download'
 
     session = requests.Session()
 

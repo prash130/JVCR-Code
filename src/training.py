@@ -18,8 +18,6 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
-from logger import Logger
-
 
 import utils
 from models import Bottleneck, coordRegressor, HourglassNet
@@ -188,11 +186,13 @@ if __name__ == '__main__':
     parser.add_argument('-dl', '--data_loader_batch_size', default=4, type=int, help='data loader batch size')
     parser.add_argument('-mode', '--mode', default='download', type=str, help='modes -> download_dataset, pre-train, train') 
     parser.add_argument('-pre_train_mode', '--pre_train_mode', default='hourglass', type=str, help=' eg. hourglass, coordinate. this is for individual training of the models') 
+    # should default be /data
     parser.add_argument('-dspath', '--dataset_path', default='/tmp/', type=str, help='data set path') # TBD change to /tmp
     parser.add_argument('-dsname', '--dataset_file_name', default='JVCR-AFLW200-Dataset', type=str, help='data set name') 
     parser.add_argument('-logdir', '--logdir', default='/tmp', type=str, help='log directory for tensorboard') 
 
-    logger = Logger('/tmp/logs')
+    #push this constant out of code
+    logger = Logger('/tmp/JVCR/logs')
 
     main(parser.parse_args())
 
