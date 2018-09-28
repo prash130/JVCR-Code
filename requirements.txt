@@ -1,4 +1,3 @@
-tensorflow
 torch
 torchvision
 scipy
