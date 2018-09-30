@@ -21,6 +21,3 @@ tensorboard --logdir='/tmp/JVCR/logs' --port=6006
 
 # deactivate virtual environment 
 source deactivate venv-jvcr
-
-# Call purge
-sh purge.sh
