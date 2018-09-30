@@ -18,6 +18,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
+from logger import Logger
 
 import utils
 from models import Bottleneck, coordRegressor, HourglassNet
@@ -78,6 +79,7 @@ def main(args):
     elif args.mode == 'train':
         print('code to be added for full training..') # TBD
     else:    
+        print(args)
         download_dataset(args)    
 
 
@@ -85,6 +87,8 @@ def download_dataset(args):
     #file_id = '1zZ6B3r8H2XrvT96GAfCpgzkSGZMSLtIU' # test doc
     file_id = '1kQihg2Yfc2clM5Qavxh2RiGc2EIg-4bX' # afwlp-2000 - 2GB
     destination = args.dataset_path + args.dataset_file_name + ".tar"
+    print(destination)
+    logger
     utils.dataset_utils.download_file_from_google_drive(file_id, destination)
     utils.dataset_utils.extract_tar_file(destination, args.dataset_path)
 
@@ -170,7 +174,7 @@ def train(args):
                   
         if epoch % save_freq == 0:
             logTensorBoard(epoch, loss, model)
-            file_name = 'epoch-'+str(epoch)+'-loss-'+str(loss.item())+'-'+pre_train_mode+'-model-opt.model'
+            file_name = args.modelsdir +'/epoch-'+str(epoch)+'-loss-'+str(loss.item())+'-'+pre_train_mode+'-model-opt.model'
             utils.transform_utils.save_model(model, optimizer, file_name)
             print('model '+file_name+' saved..')
 
@@ -178,6 +182,7 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Joint Voxel and Coordinate Regression')
 
+    logsDir = '/tmp/JVCR/logs'
     parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float, help='learning rate for the model')
     parser.add_argument('-o', '--optimizer', default='eg. RMSPROP, ADAM', type=str, help='optimizer to use. eg. ADAM, RMSPROP, SGD')
     parser.add_argument('-m', '--momentum', default=0, type=float, help='data set name') 
@@ -187,12 +192,12 @@ if __name__ == '__main__':
     parser.add_argument('-mode', '--mode', default='download', type=str, help='modes -> download_dataset, pre-train, train') 
     parser.add_argument('-pre_train_mode', '--pre_train_mode', default='hourglass', type=str, help=' eg. hourglass, coordinate. this is for individual training of the models') 
     # should default be /data
-    parser.add_argument('-dspath', '--dataset_path', default='/tmp/', type=str, help='data set path') # TBD change to /tmp
+    parser.add_argument('-dspath', '--dataset_path', default='./data/', type=str, help='data set path') # TBD change to /tmp
     parser.add_argument('-dsname', '--dataset_file_name', default='JVCR-AFLW200-Dataset', type=str, help='data set name') 
-    parser.add_argument('-logdir', '--logdir', default='/tmp', type=str, help='log directory for tensorboard') 
-
+    parser.add_argument('-logdir', '--logdir', default=logsDir, type=str, help='log directory for tensorboard') 
+    parser.add_argument('-modelsdir', '--modelsdir', default='/tmp/JVCR/models', type=str, help='model directory for saving')
     #push this constant out of code
-    logger = Logger('/tmp/JVCR/logs')
+    logger = Logger(logsDir)
 
     main(parser.parse_args())
 

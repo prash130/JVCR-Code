@@ -4,3 +4,7 @@ scipy
 numpy
 tensorboard
 matplotlib
+Pillow
+matplotlib
+requests
+tensorflow
