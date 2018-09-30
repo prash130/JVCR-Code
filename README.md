@@ -19,6 +19,26 @@
   |___ run.sh
   |___ README.md
 ```
+# There are TWO PARTS to this Training
+
+1. Training the Hourglass network --- Enable the following line in run.sh to train Hourglass Network
+
+  # Trains Hourglass network --pre_train_mode is specified.
+  python ./src/training.py -mode=pre-train --pre_train_mode=hourglass --optimizer=SGD --momentum=0.1 &
+  backgroundProcess=$!
+
+  # use the process id stored in backgroundProcess to stop the process.
+  echo "background process is $backgroundProcess"
+
+2. Training the coordinate regression -- Enable the following line in the run.sh to train Coordinate Regression  
+  # Trains coordinate regression if --pre_train_mode is not specified.
+  python ./src/training.py -mode=pre-train --optimizer=SGD --momentum=0.1 &
+  backgroundProcess=$!
+
+  # use the process id stored in backgroundProcess to stop the process.
+  echo "background process is $backgroundProcess"
+
+# Tensorboard runs at 6006 and the models are stored at the freq => epoch/5 
 
 ##### Desciption
 
