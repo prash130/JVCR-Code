@@ -3,9 +3,10 @@ from PIL import Image
 import numpy as np
 import sys
 import argparse
-from PIL import Image
 
 import matplotlib
+# Added to fix matplotlib ERROR/ can be removed if no errors are seen
+matplotlib.use('TkAgg')  
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.misc
@@ -193,11 +194,15 @@ if __name__ == '__main__':
     parser.add_argument('-pre_train_mode', '--pre_train_mode', default='hourglass', type=str, help=' eg. hourglass, coordinate. this is for individual training of the models') 
     # should default be /data
     parser.add_argument('-dspath', '--dataset_path', default='./data/', type=str, help='data set path') # TBD change to /tmp
-    parser.add_argument('-dsname', '--dataset_file_name', default='JVCR-AFLW200-Dataset', type=str, help='data set name') 
+    parser.add_argument('-dsname', '--dataset_file_name', default='JVCR-AFLW200-Dataset/', type=str, help='data set name') 
     parser.add_argument('-logdir', '--logdir', default=logsDir, type=str, help='log directory for tensorboard') 
     parser.add_argument('-modelsdir', '--modelsdir', default='/tmp/JVCR/models', type=str, help='model directory for saving')
     #push this constant out of code
     logger = Logger(logsDir)
+
+    #import os
+    #cwd = os.getcwd()
+    #print (os.listdir(cwd))
 
     main(parser.parse_args())
 
