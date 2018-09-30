@@ -1,9 +1,8 @@
 
-source deactivate
-
+# remove the downloaded packages
 conda remove --yes --name venv-jvcr --all
 
-# remove the downloaded packages
+#check if the venv-jvcr doesn't exist
 conda info --envs
 
 # remove temp files

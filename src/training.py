@@ -200,10 +200,6 @@ if __name__ == '__main__':
     #push this constant out of code
     logger = Logger(logsDir)
 
-    #import os
-    #cwd = os.getcwd()
-    #print (os.listdir(cwd))
-
     main(parser.parse_args())
 
 # things to try.. try the change in path.. pretrain model change.. try train param- for logging.. try logtensorboard.. try dataset download.. different optimizer

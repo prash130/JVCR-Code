@@ -11,6 +11,4 @@ pip install -r requirements.txt
 # conda install --yes --file requirements.txt
 
 # no args behaviour of training.py is to download dataset.
-#python ./src/training.py
-
-pip show numpy
+python ./src/training.py
