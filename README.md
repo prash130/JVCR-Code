@@ -37,7 +37,7 @@
 
 * `run.sh` - this should do the following
   * run `setup.sh`
-  * activate appropriate conda env
+  * activate appropriate conda env -- ( this would happen in setup.sh)
   * start training in background with appropriate arguments and dump logs to `logs/`
   * run tensorboard in background on `logs/`.
 * `README.sh` - Ideally it should be this document 😜. Any specific set of instructions and good to know information should go in this.
