@@ -87,6 +87,8 @@ def main(args):
 def download_dataset(args):
     #file_id = '1zZ6B3r8H2XrvT96GAfCpgzkSGZMSLtIU' # test doc
     file_id = '1kQihg2Yfc2clM5Qavxh2RiGc2EIg-4bX' # afwlp-2000 - 2GB
+    #file_id = '1AWuEEKlCM39IQU7J0VHYNBURKb4nVGUF' # afwlp-2000 - 2GB
+
     destination = args.dataset_path + args.dataset_file_name + ".tar"
     print(destination)
     logger
@@ -104,7 +106,7 @@ def train(args):
     save_freq = args.model_save_freq
     num_epochs = args.epochs
     batch_size = args.data_loader_batch_size
-    dataset_path = args.dataset_path + args.dataset_file_name
+    dataset_path = args.dataset_path + args.dataset_file_name + "/"
     pre_train_mode = args.pre_train_mode
     optimizer = args.optimizer
 
@@ -194,7 +196,7 @@ if __name__ == '__main__':
     parser.add_argument('-pre_train_mode', '--pre_train_mode', default='hourglass', type=str, help=' eg. hourglass, coordinate. this is for individual training of the models') 
     # should default be /data
     parser.add_argument('-dspath', '--dataset_path', default='./data/', type=str, help='data set path') # TBD change to /tmp
-    parser.add_argument('-dsname', '--dataset_file_name', default='JVCR-AFLW200-Dataset/', type=str, help='data set name') 
+    parser.add_argument('-dsname', '--dataset_file_name', default='JVCR-AFLW200-Dataset', type=str, help='data set name') 
     parser.add_argument('-logdir', '--logdir', default=logsDir, type=str, help='log directory for tensorboard') 
     parser.add_argument('-modelsdir', '--modelsdir', default='/tmp/JVCR/models', type=str, help='model directory for saving')
     #push this constant out of code
